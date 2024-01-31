@@ -24,7 +24,7 @@ class Users(models.Model):
     ]
 
     chat_id = models.IntegerField()
-    username = models.CharField(max_length=200)
+    username = models.CharField(max_length=200, null=True, default='')
     status = models.CharField(max_length=20, choices=STATUSES, default='user')
     in_chanel = models.BooleanField(default=False)
     interaction = models.BooleanField(default=False)

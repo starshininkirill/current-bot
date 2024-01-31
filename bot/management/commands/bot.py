@@ -54,14 +54,14 @@ last_update = None
 def create_new_user_markup(uid):
     kb = types.InlineKeyboardMarkup(row_width=1)
     btn_accept = types.InlineKeyboardButton(text='Принять заявку', callback_data=f'accept:{uid}')
-    btn_reject = types.InlineKeyboardButton(text='Отменить заявку', callback_data='game')
+    btn_reject = types.InlineKeyboardButton(text='Отменить заявку', callback_data=f'reject:{uid}')
     kb.add(btn_accept, btn_reject)
     return kb
 
 
 class Command(BaseCommand):
     def handle(self, *args, **kwargs):
-        Обработка сообщений от админа
+        # Обработка сообщений от админа
         @bot.message_handler(content_types=['text'], func=lambda message: message.chat.id == admin)
         def admin_message_handler(message):
             bot.send_message(admin, 'Бот обработал сообщение админа')
@@ -101,10 +101,32 @@ class Command(BaseCommand):
                     bot.send_message(message.from_user.id, welcome.text)
 
             # Отправляем в чат с ботом админу информацию о новой заявке
-            admin_markup = create_new_user_markup(user.chat_id);
+            admin_markup = create_new_user_markup(message.from_user.id)
 
             bot.send_message(chat_channel, f'Новая заявка от пользователя: {message.from_user.username}\n\nuid:{message.from_user.id}\nt.me/{message.from_user.username}', reply_markup=admin_markup)
             # bot.approve_chat_join_request(chat_id=main_channel, user_id=message.from_user.id);
+
+        @bot.callback_query_handler(func=lambda call: call.data.split(':')[0] == 'accept')
+        def accept_new_user(call):
+            uid = call.data.split(':')[1]
+            bot.approve_chat_join_request(chat_id=main_channel, user_id=uid)
+            bot.send_message(uid, 'Ваша заявка в канал одобрена')
+            bot.answer_callback_query(call.id)
+
+        @bot.callback_query_handler(func=lambda call: call.data.split(':')[0] == 'accept')
+        def accept_new_user(call):
+            uid = call.data.split(':')[1]
+            bot.approve_chat_join_request(chat_id=main_channel, user_id=uid)
+            bot.send_message(uid, 'Ваша заявка в канал одобрена')
+            bot.answer_callback_query(call.id)
+
+        @bot.callback_query_handler(func=lambda call: call.data.split(':')[0] == 'reject')
+        def accept_new_user(call):
+            uid = call.data.split(':')[1]
+            bot.decline_chat_join_request(chat_id=main_channel, user_id=uid)
+            bot.send_message(uid, 'Ваша заявка в канал отклонена')
+            bot.answer_callback_query(call.id)
+
 
         try:
             bot.infinity_polling()
