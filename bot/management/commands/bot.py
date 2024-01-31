@@ -7,6 +7,7 @@ import requests
 import json
 from time import sleep, time
 from pprint import pprint
+from telebot import types
 
 
 request = {'ok': True,
@@ -32,11 +33,30 @@ request = {'ok': True,
                                    'user_chat_id': 952462098},
              'update_id': 338795002}]}
 
-TOKEN = '6229389421:AAEgn0UhQ5ehVrYmoeuWvffBrPNnfCYRpzk'
-chat_channel = '-1002068346046'
-admin = Users.objects.get(status='admin').chat_id
+config = Config.objects.all()[0]
+
+TOKEN = config.bot_token
+chat_channel = config.chat_chanel
+main_channel = config.main_chanel
+admins = config.admins.split(',')
+
+# TOKEN = '6229389421:AAEgn0UhQ5ehVrYmoeuWvffBrPNnfCYRpzk'
+# chat_channel = '-1002068346046'
+# main_channel = '-1002101205896'
+try:
+    admin = Users.objects.get(status='admin').chat_id
+except:
+    pass
 bot = TeleBot(TOKEN)
 last_update = None
+
+
+def create_new_user_markup(uid):
+    kb = types.InlineKeyboardMarkup(row_width=1)
+    btn_accept = types.InlineKeyboardButton(text='Принять заявку', callback_data=f'accept:{uid}')
+    btn_reject = types.InlineKeyboardButton(text='Отменить заявку', callback_data='game')
+    kb.add(btn_accept, btn_reject)
+    return kb
 
 
 class Command(BaseCommand):
@@ -68,28 +88,27 @@ class Command(BaseCommand):
                 if line.startswith('uid'):
                     to_message_id = line.split(':')[1]
 
-            bot.send_message(to_message_id , message.text)
+            bot.send_message(to_message_id, message.text)
 
         # Обработка заявок в главный канал
-        @bot.chat_join_request_handler()
+        @bot.chat_join_request_handler(func= lambda message: message.chat.id == int(main_channel))
         def user_request(message: telebot.types.ChatJoinRequest):
+            # Отправляем приветсвенное сообщение
             user, created = Users.objects.get_or_create(chat_id=message.from_user.id, username=message.from_user.username)
             welcome_messages = Welcome.objects.all()
             for welcome in welcome_messages:
                 if welcome.type == 'text' and welcome.text != '':
                     bot.send_message(message.from_user.id, welcome.text)
-            # bot.send_message(message.chat.id, message.chat)
+
+            # Отправляем в чат с ботом админу информацию о новой заявке
+            admin_markup = create_new_user_markup(user.chat_id);
+
+            bot.send_message(chat_channel, f'Новая заявка от пользователя: {message.from_user.username}\n\nuid:{message.from_user.id}\nt.me/{message.from_user.username}', reply_markup=admin_markup)
 
         try:
             bot.infinity_polling()
         except:
             pass
-
-
-
-
-
-
 
 
 
@@ -121,7 +140,23 @@ class Command(BaseCommand):
         #     last_update_id = None
         #
         # def handl(update):
-        #     pprint(update['chat_join_request']['chat']['id'])
+        #     pprint(update[0]['chat_join_request']['from']['id'])
+        #     # user, created = Users.objects.get_or_create(chat_id=update['chat_join_request']['from']['id'], username=update['chat_join_request']['from']['username'])
+        #     # welcome_messages = Welcome.objects.all()
+        #     # for welcome in welcome_messages:
+        #     #     if welcome.type == 'text' and welcome.text != '':
+        #     #         bot.send_message(update['chat_join_request']['from']['id'], welcome.text)
+        #
+        #     # Отправляем в чат с ботом админу информацию о новой заявке
+        #     uid = update[0]['chat_join_request']['from']['id']
+        #     username = update[0]['chat_join_request']['from']['username']
+        #     try:
+        #         admin_markup = create_markup_for_admin();
+        #         bot.send_message(chat_channel,
+        #                          f'Новая заявка от пользователя: { username } \n\nuid:{uid}\nt.me/{username}', reply_markup=admin_markup)
+        #         # bot.send_message(chat_channel, 'Новая заявка от пользователя\nПринять\nОтклонить', reply_markup=admin_markup)
+        #     except:
+        #         pass
         #
         # while True:
         #     print('iter ', last_update_id)
@@ -130,6 +165,6 @@ class Command(BaseCommand):
         #         for update in updates:
         #             last_update_id = update["update_id"] + 1
         #             # pprint(update)
-        #             handl(update)
+        #             handl(request['result'])
         #
         #     sleep(0.1)
