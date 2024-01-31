@@ -61,7 +61,7 @@ def create_new_user_markup(uid):
 
 class Command(BaseCommand):
     def handle(self, *args, **kwargs):
-        # Обработка сообщений от админа
+        Обработка сообщений от админа
         @bot.message_handler(content_types=['text'], func=lambda message: message.chat.id == admin)
         def admin_message_handler(message):
             bot.send_message(admin, 'Бот обработал сообщение админа')
@@ -104,6 +104,7 @@ class Command(BaseCommand):
             admin_markup = create_new_user_markup(user.chat_id);
 
             bot.send_message(chat_channel, f'Новая заявка от пользователя: {message.from_user.username}\n\nuid:{message.from_user.id}\nt.me/{message.from_user.username}', reply_markup=admin_markup)
+            # bot.approve_chat_join_request(chat_id=main_channel, user_id=message.from_user.id);
 
         try:
             bot.infinity_polling()
@@ -141,20 +142,21 @@ class Command(BaseCommand):
         #
         # def handl(update):
         #     pprint(update[0]['chat_join_request']['from']['id'])
-        #     # user, created = Users.objects.get_or_create(chat_id=update['chat_join_request']['from']['id'], username=update['chat_join_request']['from']['username'])
-        #     # welcome_messages = Welcome.objects.all()
-        #     # for welcome in welcome_messages:
-        #     #     if welcome.type == 'text' and welcome.text != '':
-        #     #         bot.send_message(update['chat_join_request']['from']['id'], welcome.text)
+        #     user, created = Users.objects.get_or_create(chat_id=update['chat_join_request']['from']['id'], username=update['chat_join_request']['from']['username'])
+        #     welcome_messages = Welcome.objects.all()
+        #     for welcome in welcome_messages:
+        #         if welcome.type == 'text' and welcome.text != '':
+        #             bot.send_message(update['chat_join_request']['from']['id'], welcome.text)
         #
-        #     # Отправляем в чат с ботом админу информацию о новой заявке
+        #     Отправляем в чат с ботом админу информацию о новой заявке
         #     uid = update[0]['chat_join_request']['from']['id']
         #     username = update[0]['chat_join_request']['from']['username']
         #     try:
         #         admin_markup = create_markup_for_admin();
         #         bot.send_message(chat_channel,
         #                          f'Новая заявка от пользователя: { username } \n\nuid:{uid}\nt.me/{username}', reply_markup=admin_markup)
-        #         # bot.send_message(chat_channel, 'Новая заявка от пользователя\nПринять\nОтклонить', reply_markup=admin_markup)
+        #         bot.send_message(chat_channel, 'Новая заявка от пользователя\nПринять\nОтклонить', reply_markup=admin_markup)
+        #         bot.approve_chat_join_request(chat_id=main_channel, user_id=update[0]['chat_join_request']['from']['id']);
         #     except:
         #         pass
         #
