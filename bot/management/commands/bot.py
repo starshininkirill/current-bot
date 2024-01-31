@@ -64,12 +64,18 @@ class Command(BaseCommand):
         # Обработка сообщений от админа
         @bot.message_handler(content_types=['text'], func=lambda message: message.chat.id == admin)
         def admin_message_handler(message):
-            bot.send_message(admin, 'Бот обработал сообщение админа')
+            try:
+                bot.send_message(admin, 'Бот обработал сообщение админа')
+            except:
+                pass
 
         # Обработка сообщений от пользователя
         @bot.message_handler(content_types=['text'], func=lambda message: message.chat.id != int(chat_channel))
         def user_message_handler(message):
             user, created = Users.objects.get_or_create(chat_id=message.from_user.id, username=message.from_user.username)
+            if not user.interaction:
+                user.interaction = True
+                user.save()
             if created:
                 welcome_messages = Welcome.objects.all()
                 for welcome in welcome_messages:
@@ -102,17 +108,9 @@ class Command(BaseCommand):
 
             # Отправляем в чат с ботом админу информацию о новой заявке
             admin_markup = create_new_user_markup(message.from_user.id)
-
             bot.send_message(chat_channel, f'Новая заявка от пользователя: {message.from_user.username}\n\nuid:{message.from_user.id}\nt.me/{message.from_user.username}', reply_markup=admin_markup)
-            # bot.approve_chat_join_request(chat_id=main_channel, user_id=message.from_user.id);
 
-        @bot.callback_query_handler(func=lambda call: call.data.split(':')[0] == 'accept')
-        def accept_new_user(call):
-            uid = call.data.split(':')[1]
-            bot.approve_chat_join_request(chat_id=main_channel, user_id=uid)
-            bot.send_message(uid, 'Ваша заявка в канал одобрена')
-            bot.answer_callback_query(call.id)
-
+        # Обработка каллбеков на прием/отклонение заявок в канал
         @bot.callback_query_handler(func=lambda call: call.data.split(':')[0] == 'accept')
         def accept_new_user(call):
             uid = call.data.split(':')[1]
